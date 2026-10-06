@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LifeFlow MCP - Cloudflare Edge Dashboard</title>
+    <title>LifeFlow MCP - Cloudflare Edge Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,16 +21,16 @@
             <div>
                 <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
                     LifeFlow MCP Platform
-                    <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">Cloudflare Edge</span>
+                    <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">Cloudflare Edge + AI Gateway</span>
                 </h1>
-                <p class="text-xs text-gray-400">Deployed on Cloudflare Pages + FastMCP Cloud + NVIDIA NIM</p>
+                <p class="text-xs text-gray-400">Hybrid Architecture: 2 Local stdio + 2 Remote Cloud MCP Servers</p>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900 border border-white/5 text-xs font-mono">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="text-gray-300">FastMCP Cloud Live</span>
+                <span class="text-gray-300">Edge Gateway Online</span>
             </div>
             <a href="https://github.com/yashsham/lifeflow-mcp" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 transition">
                 GitHub Repo ↗
@@ -43,31 +43,62 @@
         
         <!-- Left: Servers & Tools -->
         <div class="flex flex-col gap-4">
+            
+            <!-- MCP Servers Panel (All 4 Servers) -->
             <div class="glass-panel p-4 flex flex-col gap-3">
                 <div class="flex items-center justify-between pb-1 border-b border-white/5">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">Connected MCP Nodes</h3>
-                    <span class="text-xs text-emerald-400 font-mono">Live</span>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">MCP Server Fleet (4 Nodes)</h3>
+                    <span class="text-xs text-emerald-400 font-mono font-medium">Active</span>
                 </div>
+                
                 <div class="flex flex-col gap-2.5">
-                    <div class="glass-panel p-3 flex flex-col gap-1.5 border-orange-500/30">
+                    <!-- Local 1 -->
+                    <div class="glass-panel p-2.5 flex flex-col gap-1 border-emerald-500/20 bg-emerald-950/20">
                         <div class="flex items-center justify-between">
-                            <span class="font-semibold text-sm text-gray-200">🌐 LifeFlow Cloud Hub</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">FastMCP Cloud</span>
+                            <span class="font-semibold text-xs text-emerald-300">🏠 LocalExpenseServer</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Local (stdio)</span>
                         </div>
-                        <p class="text-xs text-gray-400">Forex exchange, Crypto rates, Weather & Living cost</p>
+                        <p class="text-[11px] text-gray-400">Private expense ledger & ₹15,000 monthly budget alert</p>
+                        <span class="text-[10px] font-mono text-emerald-500">Air-gapped on device</span>
+                    </div>
+
+                    <!-- Local 2 -->
+                    <div class="glass-panel p-2.5 flex flex-col gap-1 border-emerald-500/20 bg-emerald-950/20">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-xs text-emerald-300">🏠 LocalHabitServer</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Local (stdio)</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">Workout & coding streaks, daily reflection notes</p>
+                        <span class="text-[10px] font-mono text-emerald-500">Air-gapped on device</span>
+                    </div>
+
+                    <!-- Remote Hub (Cloud) -->
+                    <div class="glass-panel p-2.5 flex flex-col gap-1 border-orange-500/30 bg-orange-950/20">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-xs text-orange-300">🌐 LifeFlow Cloud Hub</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">Remote (SSE)</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400">Live Forex exchange, Crypto, Weather & City tips</p>
                         <span class="text-[10px] font-mono text-cyan-400">2in1cryptoweather.fastmcp.app</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Tools -->
-            <div class="glass-panel p-4 flex flex-col gap-3 flex-1">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">Cloud MCP Tools</h3>
-                <div class="flex flex-col gap-2 font-mono text-xs text-blue-400">
-                    <div class="p-2.5 rounded bg-gray-900 border border-white/5">⚡ convert_currency</div>
-                    <div class="p-2.5 rounded bg-gray-900 border border-white/5">⚡ get_crypto_price</div>
-                    <div class="p-2.5 rounded bg-gray-900 border border-white/5">⚡ get_city_weather</div>
-                    <div class="p-2.5 rounded bg-gray-900 border border-white/5">⚡ get_city_living_tips</div>
+            <!-- Discovered Tools -->
+            <div class="glass-panel p-4 flex flex-col gap-3 flex-1 overflow-hidden">
+                <div class="flex items-center justify-between pb-1 border-b border-white/5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">Discovered MCP Tools</h3>
+                    <span class="text-xs text-blue-400 font-mono">10 Tools</span>
+                </div>
+                <div class="flex flex-col gap-1.5 font-mono text-[11px] overflow-y-auto max-h-[300px] pr-1">
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-blue-400 cursor-pointer hover:border-blue-500/40" onclick="setInput('What is the current price of Bitcoin?')">⚡ get_crypto_price</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-blue-400 cursor-pointer hover:border-blue-500/40" onclick="setInput('Convert 100 USD to INR')">⚡ convert_currency</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-blue-400 cursor-pointer hover:border-blue-500/40" onclick="setInput('What is the weather in Delhi?')">⚡ get_city_weather</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-blue-400 cursor-pointer hover:border-blue-500/40" onclick="setInput('Cost of living guide for Bangalore')">⚡ get_city_living_tips</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-emerald-400 cursor-pointer hover:border-emerald-500/40" onclick="setInput('I spent 450 on dinner, log it and check my budget status')">🏠 add_expense (Local)</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-emerald-400 cursor-pointer hover:border-emerald-500/40" onclick="setInput('Check current budget status')">🏠 check_budget_status (Local)</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-emerald-400 cursor-pointer hover:border-emerald-500/40" onclick="setInput('I completed my morning workout today')">🏠 log_habit (Local)</div>
+                    <div class="p-2 rounded bg-gray-900 border border-white/5 text-emerald-400 cursor-pointer hover:border-emerald-500/40" onclick="setInput('Show all my habit streaks')">🏠 get_habit_streaks (Local)</div>
                 </div>
             </div>
         </div>
@@ -78,8 +109,8 @@
                 <div class="flex items-center gap-2">
                     <span class="text-lg">🤖</span>
                     <div>
-                        <h2 class="text-sm font-semibold text-white">NVIDIA NIM Edge Agent</h2>
-                        <p class="text-xs text-gray-400">Nemotron-3.5-Lightning routed via Cloudflare Edge</p>
+                        <h2 class="text-sm font-semibold text-white">LifeFlow Edge Agent</h2>
+                        <p class="text-xs text-gray-400">Powered by NVIDIA NIM Nemotron-3.5-Lightning routed via Cloudflare Edge</p>
                     </div>
                 </div>
             </div>
@@ -87,12 +118,13 @@
             <div id="chat-messages" class="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
                 <div class="flex justify-start">
                     <div class="max-w-[85%] bg-gray-800/60 border border-white/10 rounded-2xl px-4 py-3 text-sm text-gray-200">
-                        👋 Connected to <strong>Cloudflare Edge + FastMCP Cloud</strong>!<br/><br/>
-                        Try asking:
-                        <ul class="list-disc list-inside mt-2 text-xs text-gray-300">
-                            <li>"What is the live price of Bitcoin?"</li>
-                            <li>"Convert 100 USD to INR"</li>
-                            <li>"What is the weather and living advice for Delhi?"</li>
+                        👋 Connected to <strong>Cloudflare Workers + NVIDIA NIM Gateway</strong>!<br/><br/>
+                        Try one of these real-time queries:
+                        <ul class="list-disc list-inside mt-2 text-xs text-gray-300 space-y-1">
+                            <li><a href="#" onclick="setInput('What is the current price of Bitcoin?'); return false;" class="text-orange-400 hover:underline">"What is the current price of Bitcoin?"</a></li>
+                            <li><a href="#" onclick="setInput('Convert 100 USD to INR'); return false;" class="text-orange-400 hover:underline">"Convert 100 USD to INR"</a></li>
+                            <li><a href="#" onclick="setInput('What is the weather and living advice for Delhi?'); return false;" class="text-orange-400 hover:underline">"What is the weather and living advice for Delhi?"</a></li>
+                            <li><a href="#" onclick="setInput('I spent 450 on lunch, how is my budget?'); return false;" class="text-orange-400 hover:underline">"I spent 450 on lunch, how is my budget?"</a></li>
                         </ul>
                     </div>
                 </div>
@@ -108,6 +140,7 @@
                         onkeydown="if(event.key === 'Enter') sendEdgeMessage()"
                     />
                     <button 
+                        id="send-btn"
                         onclick="sendEdgeMessage()" 
                         class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-orange-600/30"
                     >
@@ -120,15 +153,22 @@
         <!-- Right: Edge Trace -->
         <div class="glass-panel p-4 flex flex-col h-[calc(100vh-100px)]">
             <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300 font-mono pb-2 border-b border-white/10">Edge Protocol Inspector</h3>
-            <p class="text-xs text-gray-400 mt-2">Zero-Cold-Start Cloudflare Edge Telemetry</p>
+            <p class="text-xs text-gray-400 mt-2">Live Cloudflare Worker Telemetry Trace</p>
             <div id="edge-logs" class="flex-1 overflow-y-auto space-y-2 pr-1 mt-3 text-xs font-mono text-gray-400">
                 <div class="log-box">🟢 Cloudflare Edge Gateway connected</div>
                 <div class="log-box">⚡ FastMCP Endpoint: 2in1cryptoweather.fastmcp.app</div>
+                <div class="log-box">🧠 AI Model: nvidia/nemotron-3.5-lightning-30b-a3b</div>
             </div>
         </div>
 
     </div>
 
     <script src="js/edge.js"></script>
+    <script>
+        function setInput(t) {
+            document.getElementById("chat-input").value = t;
+            sendEdgeMessage();
+        }
+    </script>
 </body>
 </html>
