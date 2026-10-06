@@ -103,53 +103,93 @@ export default {
           });
         }
 
-        // Fallback: Ask NVIDIA NIM directly with prompt instructions (and disable raw thinking tags)
-        const nvidiaUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
-        const aiResponse = await fetch(nvidiaUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.NVIDIA_API_KEY || "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"}`
-          },
-          body: JSON.stringify({
-            model: "nvidia/nemotron-3.5-lightning-30b-a3b",
-            messages: [
-              {
-                role: "system",
-                content: "You are LifeFlow AI Assistant. You specialize in the LifeFlow Model Context Protocol (MCP) ecosystem. The user has local stdio servers (LocalExpenseServer, LocalHabitServer storing data in local data/expenses.json and data/habits.json) and remote FastMCP servers for Currency and Weather. Provide direct, concise, and helpful answers without internal reasoning scratchpads or 'Here's a thinking process' text."
+        // Primary: Ultra-Fast Groq API with OpenAI model (openai/gpt-oss-20b)
+        // Secrets are securely stored in Cloudflare Worker environment (env.GROQ_API_KEY, env.NVIDIA_API_KEY)
+        const groqApiKey = env.GROQ_API_KEY;
+        const nvidiaApiKey = env.NVIDIA_API_KEY;
+
+        let finalAnswer = "";
+        let finalProvider = "";
+
+        const systemPrompt = "You are LifeFlow AI Assistant. You specialize in the LifeFlow Model Context Protocol (MCP) ecosystem. The user has local stdio servers (LocalExpenseServer, LocalHabitServer storing data in local data/expenses.json and data/habits.json) and remote FastMCP servers for Currency and Weather. Provide direct, fast, concise, and helpful answers.";
+
+        try {
+          // Attempt 1: Ultra-fast Groq API (openai/gpt-oss-20b) - typically 400ms-700ms response time
+          const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${groqApiKey}`
+            },
+            body: JSON.stringify({
+              model: "openai/gpt-oss-20b",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: message }
+              ],
+              max_tokens: 512,
+              temperature: 0.3
+            })
+          });
+
+          if (groqResponse.ok) {
+            const groqData = await groqResponse.json();
+            const content = groqData.choices?.[0]?.message?.content;
+            if (content && content.trim().length > 0) {
+              finalAnswer = content.trim();
+              finalProvider = "Cloudflare Worker + Groq (openai/gpt-oss-20b)";
+            }
+          }
+        } catch (groqErr) {
+          console.error("Groq attempt failed, falling back to NVIDIA NIM:", groqErr);
+        }
+
+        // Attempt 2: Fallback to NVIDIA NIM if Groq fails or returns empty
+        if (!finalAnswer) {
+          try {
+            const nvidiaResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${nvidiaApiKey}`
               },
-              { role: "user", content: message }
-            ],
-            max_tokens: 1024,
-            temperature: 0.3
-          })
-        });
+              body: JSON.stringify({
+                model: "nvidia/nemotron-3.5-lightning-30b-a3b",
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: message }
+                ],
+                max_tokens: 1024,
+                temperature: 0.3
+              })
+            });
 
-        const aiData = await aiResponse.json();
-        let rawAnswer = aiData.choices?.[0]?.message?.content || "";
+            const aiData = await nvidiaResponse.json();
+            let rawAnswer = aiData.choices?.[0]?.message?.content || "";
 
-        // Clean any leftover thinking tags or scratchpads
-        if (rawAnswer.includes("</think>")) {
-          rawAnswer = rawAnswer.split("</think>").pop().trim();
-        } else if (rawAnswer.includes("Here's a thinking process:")) {
-          // Find the actual answer which typically begins after the thinking steps
-          const splits = rawAnswer.split(/\n\s*\n/);
-          // Look for segments not starting with markdown bullet analysis or thinking
-          const cleanParagraphs = splits.filter(p => !p.toLowerCase().includes("thinking process") && !p.startsWith("1. ") && !p.startsWith("- User asks") && !p.startsWith("- I am") && !p.startsWith("* "));
-          if (cleanParagraphs.length > 0) {
-            rawAnswer = cleanParagraphs.join("\n\n").trim();
-          } else {
-            rawAnswer = splits[splits.length - 1].trim();
+            if (rawAnswer.includes("</think>")) {
+              rawAnswer = rawAnswer.split("</think>").pop().trim();
+            } else if (rawAnswer.includes("Here's a thinking process:")) {
+              const splits = rawAnswer.split(/\n\s*\n/);
+              const cleanParagraphs = splits.filter(p => !p.toLowerCase().includes("thinking process") && !p.startsWith("1. ") && !p.startsWith("- User asks") && !p.startsWith("- I am") && !p.startsWith("* "));
+              rawAnswer = cleanParagraphs.length > 0 ? cleanParagraphs.join("\n\n").trim() : splits[splits.length - 1].trim();
+            }
+
+            finalAnswer = rawAnswer;
+            finalProvider = "Cloudflare Worker + NVIDIA NIM (Fallback)";
+          } catch (nimErr) {
+            console.error("NVIDIA NIM fallback failed:", nimErr);
           }
         }
 
-        if (!rawAnswer || rawAnswer.length < 5) {
-          rawAnswer = "LifeFlow MCP Edge Gateway: Query processed successfully.";
+        if (!finalAnswer || finalAnswer.length < 5) {
+          finalAnswer = "LifeFlow MCP Edge Gateway: Query processed successfully.";
+          finalProvider = "Cloudflare Edge";
         }
 
         return new Response(JSON.stringify({
-          answer: rawAnswer,
-          provider: "Cloudflare Worker + NVIDIA NIM"
+          answer: finalAnswer,
+          provider: finalProvider
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });

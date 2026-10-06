@@ -1,5 +1,16 @@
-.venv/
+﻿.venv/
 __pycache__/
 *.pyc
 .env
+.env.*
 data/
+secrets/
+*.pem
+*.key
+
+# wrangler files
+.wrangler/
+.dev.vars
+.dev.vars*
+!.dev.vars.example
+!.env.example
