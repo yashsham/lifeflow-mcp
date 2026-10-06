@@ -18,6 +18,7 @@ Built specifically to demonstrate advanced LLM agent architecture, client orches
   - 🏠 **`LocalHabitServer` (stdio)**: Private routine and habit streak engine.
   - 🌐 **`RemoteCurrencyServer` (SSE:8001)**: Real-time public currency exchange conversion and crypto prices.
   - 🌐 **`RemoteCityServer` (SSE:8002)**: Real-time city weather telemetry and cost-of-living indicators.
+  - 📦 *Standalone Remote Microservices Repo:* [yashsham/lifeflow-remote-mcp](https://github.com/yashsham/lifeflow-remote-mcp)
 - **Custom FastMCP Multi-Server Client**: Connection pooling, unified tool registry aggregation, and round-trip execution latency tracking.
 - **Interactive Web Dashboard**: Glassmorphism UI with real-time server health badges, isolated tool test runner, and conversational AI agent.
 - **Live JSON-RPC 2.0 Protocol Inspector**: Inspect raw incoming and outgoing MCP frames (`tools/list`, `tools/call`, responses, and error handling) in real time.
