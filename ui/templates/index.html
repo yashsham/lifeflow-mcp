@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeFlow MCP - Multi-Server Protocol Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-[#0b0f19] text-gray-100 min-h-screen flex flex-col">
+
+    <!-- Top Header -->
+    <header class="bg-[#111726]/80 backdrop-blur-md border-b border-white/10 px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 font-bold text-white text-lg">
+                ⚡
+            </div>
+            <div>
+                <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    LifeFlow MCP Platform
+                    <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">v1.0 FastMCP</span>
+                </h1>
+                <p class="text-xs text-gray-400">4-Server Multi-Transport Model Context Protocol Ecosystem</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-900 border border-white/5 text-xs font-mono">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-gray-300">2 Local (stdio) + 2 Remote (SSE)</span>
+            </div>
+            <a href="https://modelcontextprotocol.io" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 transition">
+                MCP Docs ↗
+            </a>
+        </div>
+    </header>
+
+    <!-- Main 3-Column Layout -->
+    <div class="main-container flex-1 py-4 px-6 gap-5">
+        
+        <!-- Left Column: Servers & Available Tools -->
+        <div class="flex flex-col gap-4">
+            
+            <!-- MCP Server Nodes -->
+            <div class="glass-panel p-4 flex flex-col gap-3">
+                <div class="flex items-center justify-between pb-1 border-b border-white/5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">Active MCP Servers (4)</h3>
+                    <span class="text-xs text-emerald-400 font-mono font-medium">Orchestrated</span>
+                </div>
+                <div id="server-cards-container" class="flex flex-col gap-2.5">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Discovered Tools Catalog -->
+            <div class="glass-panel p-4 flex flex-col gap-3 flex-1 overflow-hidden">
+                <div class="flex items-center justify-between pb-1 border-b border-white/5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">Unified Tools Catalog</h3>
+                    <span id="tool-count" class="text-xs text-blue-400 font-mono">0 Tools</span>
+                </div>
+                <p class="text-[11px] text-gray-400">Click any tool to run an instant isolated JSON-RPC test.</p>
+                <div id="tool-list-container" class="flex flex-col gap-2 overflow-y-auto max-h-[380px] pr-1">
+                    <!-- Tools list loaded here -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Center Column: Multi-Turn AI Chat Agent -->
+        <div class="glass-panel p-4 flex flex-col h-[calc(100vh-100px)]">
+            
+            <!-- Chat Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-white/10">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🤖</span>
+                    <div>
+                        <h2 class="text-sm font-semibold text-white">LifeFlow Autonomous Agent</h2>
+                        <p class="text-xs text-gray-400">Interviews Local DB & External APIs in a unified execution graph</p>
+                    </div>
+                </div>
+                <!-- Sample Prompts Pills -->
+                <div class="hidden md:flex gap-1.5">
+                    <button onclick="setInput('I spent ₹450 on dinner and completed morning workout. Log both!')" class="text-[11px] px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                        🍔 Log Expense + Habit
+                    </button>
+                    <button onclick="setInput('Convert 50 USD to INR and check current budget status.')" class="text-[11px] px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                        💱 Convert $50 + Budget
+                    </button>
+                    <button onclick="setInput('What is the weather and living cost guide for Bangalore?')" class="text-[11px] px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition">
+                        🏙️ Weather & Living Guide
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Stream Area -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+                <div class="flex justify-start">
+                    <div class="max-w-[85%] bg-gray-800/60 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-gray-200">
+                        👋 Welcome to the <strong>LifeFlow MCP Platform</strong>!<br/><br/>
+                        I am your MCP Orchestrated Agent. I have active connections to:
+                        <ul class="list-disc list-inside mt-2 text-xs space-y-1 text-gray-300">
+                            <li><strong>LocalExpenseServer (stdio)</strong>: Private finances & budget caps.</li>
+                            <li><strong>LocalHabitServer (stdio)</strong>: Daily habits, streaks & routines.</li>
+                            <li><strong>RemoteCurrencyServer (SSE)</strong>: Live exchange rates & crypto.</li>
+                            <li><strong>RemoteCityServer (SSE)</strong>: Real-time city weather & living advice.</li>
+                        </ul>
+                        <p class="mt-2 text-xs text-blue-400 font-mono">Ask me a query or click one of the suggested prompts above!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="pt-3 border-t border-white/10">
+                <div class="flex items-center gap-2 bg-gray-900/90 border border-white/10 rounded-xl p-1.5 focus-within:border-blue-500/60 transition">
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="e.g. 'I spent 250 on lunch, how is my monthly budget looking?'" 
+                        class="flex-1 bg-transparent px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none"
+                        onkeydown="if(event.key === 'Enter') sendMessage()"
+                    />
+                    <button 
+                        onclick="sendMessage()" 
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-blue-600/30 flex items-center gap-1.5"
+                    >
+                        Send <span>➔</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Real-time MCP JSON-RPC Inspector -->
+        <div class="glass-panel p-4 flex flex-col h-[calc(100vh-100px)]">
+            <div class="flex items-center justify-between pb-3 border-b border-white/10">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-mono text-cyan-400">🔍</span>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300 font-mono">Protocol Inspector</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span class="text-[11px] font-mono text-cyan-400">JSON-RPC 2.0 Live</span>
+                </div>
+            </div>
+            
+            <p class="text-[11px] text-gray-400 mt-2 mb-2">
+                Real-time transport trace of all <code class="text-blue-300">tools/list</code> and <code class="text-blue-300">tools/call</code> frames.
+            </p>
+
+            <div id="protocol-logs-container" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                <!-- Live logs streamed here -->
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        function setInput(text) {
+            const input = document.getElementById("chat-input");
+            input.value = text;
+            sendMessage();
+        }
+    </script>
+</body>
+</html>

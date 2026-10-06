@@ -1,0 +1,55 @@
+name: Deploy Remote FastMCP Servers
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install fastmcp httpx pydantic uvicorn fastapi
+
+      - name: Test Remote Currency Server Launch
+        run: |
+          python -m servers.remote_currency &
+          PID1=$!
+          sleep 4
+          # Health check SSE endpoint
+          curl -f http://127.0.0.1:8001/sse || exit 1
+          kill $PID1
+
+      - name: Test Remote City Server Launch
+        run: |
+          python -m servers.remote_city &
+          PID2=$!
+          sleep 4
+          # Health check SSE endpoint
+          curl -f http://127.0.0.1:8002/sse || exit 1
+          kill $PID2
+
+  deploy-cloud-container:
+    needs: test-and-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Container for Remote FastMCP
+        run: |
+          docker build -t lifeflow-remote-mcp:latest .
+          echo "Docker image built successfully for Cloud Run / Render / Railway deployment!"
