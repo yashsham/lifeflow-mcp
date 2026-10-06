@@ -99,13 +99,15 @@ class MCPClientManager:
 
                 tool_dicts = []
                 for t in tools:
+                    # Support both input_schema (v2) and inputSchema (v1)
+                    schema = getattr(t, "input_schema", None) or getattr(t, "inputSchema", None) or {}
                     t_info = {
                         "name": t.name,
                         "description": t.description or "No description provided",
                         "server": cfg["name"],
                         "server_key": server_key,
                         "server_type": cfg["type"],
-                        "parameters": t.parameters if hasattr(t, "parameters") else {}
+                        "parameters": schema
                     }
                     tool_dicts.append(t_info)
                     self.tool_registry[t.name] = {

@@ -1,147 +1,160 @@
 """
-LifeFlow Agent Engine
-Integrates user query processing with autonomous tool selection and execution.
-Works with zero API keys required (built-in intelligent heuristic engine) or OpenAI/Gemini if configured.
+LifeFlow Agent Engine with NVIDIA NIM Integration
+Model: nvidia/nemotron-3.5-lightning-30b-a3b
+Orchestrates autonomous tool calling across 4 FastMCP servers (2 Local + 2 Remote).
 """
 
-import re
+import json
+import asyncio
 from typing import Dict, Any, List
 from mcp_client.client_manager import client_manager
+from mcp_client.llm_config import get_nvidia_client, NVIDIA_MODEL
 
 
 class LifeFlowAgent:
-    """Agent that bridges natural language queries to MCP tool calls across local and remote servers."""
+    """Intelligent agent powered by NVIDIA NIM Nemotron-3.5-lightning that queries MCP servers."""
+
+    def __init__(self):
+        self.llm = get_nvidia_client()
+        self.model = NVIDIA_MODEL
+
+    def _build_tools_schema(self, tools: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Format MCP tools into standard OpenAI / NVIDIA function calling schema."""
+        formatted_tools = []
+        for t in tools:
+            # Normalize schema
+            params = t.get("parameters", {})
+            if not isinstance(params, dict) or not params.get("properties"):
+                params = {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            
+            tool_spec = {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": f"[{t.get('server', 'MCP Server')}] {t.get('description', '')}",
+                    "parameters": params
+                }
+            }
+            formatted_tools.append(tool_spec)
+        return formatted_tools
 
     async def run(self, user_prompt: str) -> Dict[str, Any]:
-        """Analyze prompt, decide required MCP tools, execute them, and formulate response."""
-        p_lower = user_prompt.lower()
+        """Process user message, query NVIDIA NIM for function calling or synthesis, execute MCP tools."""
+        # 1. Fetch live tool registry
+        tools = await client_manager.discover_all_tools()
+        tools_schema = self._build_tools_schema(tools)
+
+        system_instruction = (
+            "You are LifeFlow AI, an intelligent personal finance & daily routine agent powered by the Model Context Protocol (MCP).\n"
+            "You have access to 4 connected MCP servers:\n"
+            "1. LocalExpenseServer (Local stdio): add_expense, get_monthly_summary, check_budget_status.\n"
+            "2. LocalHabitServer (Local stdio): log_habit, get_habit_streaks, add_journal_entry.\n"
+            "3. RemoteCurrencyServer (Remote SSE): convert_currency, get_crypto_price.\n"
+            "4. RemoteCityServer (Remote SSE): get_city_weather, get_city_living_tips.\n\n"
+            "INSTRUCTIONS:\n"
+            "- Always use the appropriate tool when the user asks about expenses, habits, currency conversion, crypto, or city info.\n"
+            "- If a user mentions multiple actions (e.g. log expense AND convert currency), call the tools or answer clearly.\n"
+            "- Provide concise, encouraging, and structured responses."
+        )
+
+        messages = [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": user_prompt}
+        ]
+
         tool_executions: List[Dict[str, Any]] = []
 
-        # 1. Check for Currency Conversion intent
-        # e.g., "convert $50 to INR" or "convert 100 USD to INR"
-        curr_match = re.search(r'(\$|€|£)?\s*(\d+(\.\d+)?)\s*([a-zA-Z]{3})?\s*(?:to|in|into)\s*([a-zA-Z]{3})?', user_prompt)
-        if any(w in p_lower for w in ["convert", "currency", "usd", "inr", "eur", "exchange rate", "dollar"]):
-            amt = 50.0
-            from_c = "USD"
-            to_c = "INR"
-            
-            # Extract numbers if present
-            num_match = re.search(r'(\d+(?:\.\d+)?)', user_prompt)
-            if num_match:
-                amt = float(num_match.group(1))
-            
-            if "eur" in p_lower:
-                from_c = "EUR"
-            elif "gbp" in p_lower:
-                from_c = "GBP"
-            elif "aed" in p_lower:
-                from_c = "AED"
-            elif "usd" in p_lower or "$" in user_prompt:
-                from_c = "USD"
+        try:
+            # Call NVIDIA NIM
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: self.llm.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    tools=tools_schema if tools_schema else None,
+                    tool_choice="auto" if tools_schema else None,
+                    max_tokens=1024,
+                    temperature=0.2
+                )
+            )
 
-            if "inr" in p_lower or "rupee" in p_lower or "rs" in p_lower:
-                to_c = "INR"
-            elif "usd" in p_lower and from_c != "USD":
-                to_c = "USD"
+            msg = response.choices[0].message
 
-            res = await client_manager.execute_tool("convert_currency", {"amount": amt, "from_curr": from_c, "to_curr": to_c})
-            tool_executions.append(res)
+            # Check if model chose to invoke tools
+            if getattr(msg, "tool_calls", None) and msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    fn_name = tool_call.function.name
+                    try:
+                        fn_args = json.loads(tool_call.function.arguments or "{}")
+                    except Exception:
+                        fn_args = {}
 
-        # 2. Check for Crypto prices
-        if any(w in p_lower for w in ["crypto", "bitcoin", "btc", "ethereum", "eth", "solana", "sol"]):
-            coin = "bitcoin"
-            if "ethereum" in p_lower or "eth" in p_lower:
-                coin = "ethereum"
-            elif "solana" in p_lower or "sol" in p_lower:
-                coin = "solana"
-            res = await client_manager.execute_tool("get_crypto_price", {"coin": coin})
-            tool_executions.append(res)
+                    # Execute tool via MCP Client Manager
+                    exec_res = await client_manager.execute_tool(fn_name, fn_args)
+                    tool_executions.append(exec_res)
 
-        # 3. Check for Expense logging or checking
-        if any(w in p_lower for w in ["expense", "kharcha", "spend", "spent", "budget", "cost", "bought", "purchase", "dinner", "food", "bills"]):
-            if any(w in p_lower for w in ["add", "log", "record", "spent", "kharch"]):
-                # Determine amount
-                amt = 250.0
-                num_match = re.search(r'(\d+(?:\.\d+)?)', user_prompt)
-                if num_match:
-                    amt = float(num_match.group(1))
-                
-                cat = "Food"
-                if any(w in p_lower for w in ["travel", "cab", "uber", "flight", "metro"]):
-                    cat = "Travel"
-                elif any(w in p_lower for w in ["bill", "recharge", "wifi", "rent"]):
-                    cat = "Bills"
-                elif any(w in p_lower for w in ["shopping", "cloth", "amazon"]):
-                    cat = "Shopping"
-
-                res = await client_manager.execute_tool("add_expense", {
-                    "category": cat,
-                    "amount": amt,
-                    "note": user_prompt,
-                    "currency": "INR"
+                # Feed tool results back to NVIDIA NIM for final synthesis
+                tool_messages = list(messages)
+                tool_messages.append({
+                    "role": "assistant",
+                    "content": msg.content or "",
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            }
+                        } for tc in msg.tool_calls
+                    ]
                 })
-                tool_executions.append(res)
-            
-            # Always get status/summary when expense is mentioned
-            res_sum = await client_manager.execute_tool("check_budget_status", {})
-            tool_executions.append(res_sum)
 
-        # 4. Check for Habit logging / routine
-        if any(w in p_lower for w in ["habit", "gym", "workout", "streak", "read", "coding", "routine"]):
-            h_name = "Morning Workout"
-            if "read" in p_lower:
-                h_name = "Read 20 pages"
-            elif "coding" in p_lower or "code" in p_lower:
-                h_name = "Coding practice"
+                for i, tc in enumerate(msg.tool_calls):
+                    exec_res = tool_executions[i]
+                    tool_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": exec_res.get("result") or exec_res.get("error") or "Done"
+                    })
 
-            if any(w in p_lower for w in ["log", "did", "went", "done", "completed"]):
-                res_habit = await client_manager.execute_tool("log_habit", {"habit_name": h_name, "completed": True})
-                tool_executions.append(res_habit)
+                # Final synthesized response from NVIDIA NIM
+                synth_response = await loop.run_in_executor(
+                    None,
+                    lambda: self.llm.chat.completions.create(
+                        model=self.model,
+                        messages=tool_messages,
+                        max_tokens=1024,
+                        temperature=0.3
+                    )
+                )
+                # Format synthesized response from tool executions if NIM gives empty text
+                answer_content = synth_response.choices[0].message.content or ""
+                if not answer_content.strip() or answer_content.strip() == "Completed actions successfully.":
+                    lines = ["**Actions Completed:**\n"]
+                    for te in tool_executions:
+                        lines.append(f"> **[{te.get('server')}]**: {te.get('result')}")
+                    final_answer = "\n".join(lines)
+                else:
+                    final_answer = answer_content
+
             else:
-                res_habit = await client_manager.execute_tool("get_habit_streaks", {})
-                tool_executions.append(res_habit)
+                final_answer = msg.content or "I have processed your request."
 
-        # 5. Check for City Weather or Living cost tips
-        cities = ["delhi", "mumbai", "bangalore", "pune", "hyderabad", "new york", "london"]
-        found_city = None
-        for c in cities:
-            if c in p_lower:
-                found_city = c
-                break
-
-        if any(w in p_lower for w in ["weather", "temperature", "mausam"]) or (found_city and "weather" in p_lower):
-            city_target = found_city if found_city else "Delhi"
-            res_w = await client_manager.execute_tool("get_city_weather", {"city": city_target})
-            tool_executions.append(res_w)
-
-        if any(w in p_lower for w in ["living cost", "living guide", "tips for", "rent in"]) or (found_city and "tips" in p_lower):
-            city_target = found_city if found_city else "Delhi"
-            res_c = await client_manager.execute_tool("get_city_living_tips", {"city": city_target})
-            tool_executions.append(res_c)
-
-        # If no specific rule triggered, execute summary of both local servers
-        if not tool_executions:
-            res1 = await client_manager.execute_tool("get_monthly_summary", {})
-            res2 = await client_manager.execute_tool("get_habit_streaks", {})
-            tool_executions.extend([res1, res2])
-
-        # Synthesize friendly markdown answer
-        synthesis_lines = [
-            f"Here is what I gathered and performed across your **Local & Remote MCP Servers**:\n"
-        ]
-        for execution in tool_executions:
-            if execution.get("success"):
-                srv = execution.get("server", "MCP")
-                srv_type = execution.get("server_type", "Standard")
-                res_text = execution.get("result", "")
-                synthesis_lines.append(f"**From `{srv}` ({srv_type})**:")
-                synthesis_lines.append(f"> {res_text.replace(chr(10), chr(10) + '> ')}\n")
-            else:
-                synthesis_lines.append(f"⚠️ Error executing `{execution.get('tool')}`: {execution.get('error')}\n")
+        except Exception as e:
+            # Fallback heuristic if API timeout or formatting occurs
+            from mcp_client.agent_fallback import fallback_execute
+            return await fallback_execute(user_prompt)
 
         return {
-            "answer": "\n".join(synthesis_lines),
-            "tool_calls": tool_executions
+            "answer": final_answer,
+            "tool_calls": tool_executions,
+            "llm": f"NVIDIA NIM ({self.model})"
         }
 
 
