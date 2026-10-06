@@ -51,7 +51,7 @@ class LifeFlowAgent:
         system_instruction = (
             "You are LifeFlow AI, an intelligent personal finance & daily routine agent powered by the Model Context Protocol (MCP).\n"
             "You have access to 4 connected MCP servers:\n"
-            "1. LocalExpenseServer (Local stdio): add_expense, get_monthly_summary, check_budget_status.\n"
+            "1. LocalExpenseServer (Local stdio): add_expense, get_monthly_summary, check_budget_status, get_expenses_by_date_range, delete_expense, update_financial_rules.\n"
             "2. LocalHabitServer (Local stdio): log_habit, get_habit_streaks, add_journal_entry.\n"
             "3. RemoteCurrencyServer (Remote SSE): convert_currency, get_crypto_price.\n"
             "4. RemoteCityServer (Remote SSE): get_city_weather, get_city_living_tips.\n\n"

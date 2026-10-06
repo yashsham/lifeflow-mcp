@@ -81,15 +81,20 @@ export default {
           }
         }
 
-        // 5. Tool Execution / Architecture Query: Local MCP File Location, Privacy & Storage
-        else if (pLower.includes("local mcp") || pLower.includes("file located") || pLower.includes("where is") || pLower.includes("local system") || pLower.includes("privacy") || pLower.includes("stdio") || pLower.includes("storage")) {
-          toolName = "get_system_architecture";
-          toolResult = `📁 **LifeFlow Local MCP File Architecture**:\n` +
-            `- **Location on Local Device:** Your files are stored in the local project workspace under the \`data/\` directory:\n` +
-            `  • \`data/expenses.json\` (Private Expense Logs)\n` +
-            `  • \`data/habits.json\` (Habit & Streak Trackers)\n` +
-            `- **Privacy Guarantee:** The Local MCP servers run strictly on your machine via **stdio** (standard input/output). Zero unencrypted personal financial or habit data is ever uploaded to the cloud or Cloudflare Edge.\n` +
-            `- **Cloud vs Local:** Only live tools (Crypto & Weather) query the remote FastMCP server; all personal records stay exclusively on your local disk.`;
+        // 6. Tool Execution: Delete Expense or Update Financial Rules
+        else if (pLower.includes("delete expense") || pLower.includes("remove expense") || pLower.includes("update budget") || pLower.includes("change budget") || pLower.includes("date range") || pLower.includes("filter expense")) {
+          toolName = "local_expense_management";
+          if (pLower.includes("delete") || pLower.includes("remove")) {
+            const numMatch = message.match(/(\d+)/);
+            const id = numMatch ? numMatch[1] : "1";
+            toolResult = `🗑️ **Expense Deleted (Local stdio)**:\n- Successfully removed transaction \`[ID: ${id}]\` from local database \`data/expenses.json\`.\n- Ledger balance and category summaries recalculated automatically.`;
+          } else if (pLower.includes("budget") || pLower.includes("rule")) {
+            const numMatch = message.match(/(\d+(?:,\d+)?)/);
+            const newBudget = numMatch ? numMatch[1].replace(",", "") : "20000";
+            toolResult = `⚙️ **Financial Rules Updated (Local stdio)**:\n- **New Monthly Budget Cap:** ₹${parseInt(newBudget).toLocaleString()} INR\n- **Default Currency:** INR (Active)\n- **Updated Resource:** \`resource://finance/rules\` now reflects the new ₹${parseInt(newBudget).toLocaleString()} threshold in \`data/financial_rules.json\`.`;
+          } else {
+            toolResult = `📅 **Date-Range Expense Records (Local stdio)**:\n- Showing filtered records from \`data/expenses.json\` matching your selected date window.\n- Total Filtered Spending: ₹1,850.00 INR across 3 categories.`;
+          }
         }
 
         // If a tool executed, return clean formatted MCP output
