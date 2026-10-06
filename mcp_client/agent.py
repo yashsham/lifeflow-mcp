@@ -35,7 +35,7 @@ class LifeFlowAgent:
                 "type": "function",
                 "function": {
                     "name": t["name"],
-                    "description": f"[{t.get('server', 'MCP Server')}] {t.get('description', '')}",
+                    "description": t.get("description", "MCP tool"),
                     "parameters": params
                 }
             }
@@ -69,7 +69,7 @@ class LifeFlowAgent:
         tool_executions: List[Dict[str, Any]] = []
 
         try:
-            # Call NVIDIA NIM
+            # Call NVIDIA NIM (Fast mode: disable long reasoning loops for instantaneous tool calling)
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
@@ -78,8 +78,11 @@ class LifeFlowAgent:
                     messages=messages,
                     tools=tools_schema if tools_schema else None,
                     tool_choice="auto" if tools_schema else None,
-                    max_tokens=1024,
-                    temperature=0.2
+                    max_tokens=300,
+                    temperature=0.1,
+                    extra_body={
+                        "chat_template_kwargs": {"enable_thinking": False}
+                    }
                 )
             )
 
@@ -98,50 +101,14 @@ class LifeFlowAgent:
                     exec_res = await client_manager.execute_tool(fn_name, fn_args)
                     tool_executions.append(exec_res)
 
-                # Feed tool results back to NVIDIA NIM for final synthesis
-                tool_messages = list(messages)
-                tool_messages.append({
-                    "role": "assistant",
-                    "content": msg.content or "",
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments
-                            }
-                        } for tc in msg.tool_calls
-                    ]
-                })
-
-                for i, tc in enumerate(msg.tool_calls):
-                    exec_res = tool_executions[i]
-                    tool_messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "content": exec_res.get("result") or exec_res.get("error") or "Done"
-                    })
-
-                # Final synthesized response from NVIDIA NIM
-                synth_response = await loop.run_in_executor(
-                    None,
-                    lambda: self.llm.chat.completions.create(
-                        model=self.model,
-                        messages=tool_messages,
-                        max_tokens=1024,
-                        temperature=0.3
-                    )
-                )
-                # Format synthesized response from tool executions if NIM gives empty text
-                answer_content = synth_response.choices[0].message.content or ""
-                if not answer_content.strip() or answer_content.strip() == "Completed actions successfully.":
-                    lines = ["**Actions Completed:**\n"]
-                    for te in tool_executions:
-                        lines.append(f"> **[{te.get('server')}]**: {te.get('result')}")
-                    final_answer = "\n".join(lines)
-                else:
-                    final_answer = answer_content
+                # Return synthesized response directly from MCP tool executions (instant 0ms synthesis!)
+                lines = []
+                for te in tool_executions:
+                    if te.get("success"):
+                        lines.append(f"**[{te.get('server')}]**: {te.get('result')}")
+                    else:
+                        lines.append(f"⚠️ *Error ({te.get('tool')})*: {te.get('error')}")
+                final_answer = "\n\n".join(lines) if lines else "Action completed successfully."
 
             else:
                 final_answer = msg.content or "I have processed your request."

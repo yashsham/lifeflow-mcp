@@ -77,8 +77,11 @@ class MCPClientManager:
             # Remote SSE / HTTP FastMCP client
             return Client(cfg["endpoint"])
 
-    async def discover_all_tools(self) -> List[Dict[str, Any]]:
-        """Query each MCP server via `tools/list` and assemble an aggregated registry."""
+    async def discover_all_tools(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
+        """Query each MCP server via `tools/list` and assemble an aggregated registry (cached)."""
+        if not force_refresh and self.tool_registry:
+            return [v["meta"] for v in self.tool_registry.values()]
+
         all_tools = []
         
         for server_key, cfg in self.servers.items():
