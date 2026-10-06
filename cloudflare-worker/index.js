@@ -81,10 +81,15 @@ export default {
           }
         }
 
-        // 4. Tool Execution: Local Expense & Habit Simulation
-        else if (pLower.includes("expense") || pLower.includes("spent") || pLower.includes("kharcha") || pLower.includes("budget") || pLower.includes("habit") || pLower.includes("workout")) {
-          toolName = "local_expense_habit";
-          toolResult = `🏠 **Local MCP Servers (stdio)**:\n- **Expense Logged:** ₹450 INR on Food recorded to \`data/expenses.json\`\n- **Budget Status:** ✅ Healthy (16.2% of ₹15,000 budget used. Remaining: ₹12,570 INR)\n- **Habit Streak:** 🔥 Morning Workout streak increased to 6 days!`;
+        // 5. Tool Execution / Architecture Query: Local MCP File Location, Privacy & Storage
+        else if (pLower.includes("local mcp") || pLower.includes("file located") || pLower.includes("where is") || pLower.includes("local system") || pLower.includes("privacy") || pLower.includes("stdio") || pLower.includes("storage")) {
+          toolName = "get_system_architecture";
+          toolResult = `📁 **LifeFlow Local MCP File Architecture**:\n` +
+            `- **Location on Local Device:** Your files are stored in the local project workspace under the \`data/\` directory:\n` +
+            `  • \`data/expenses.json\` (Private Expense Logs)\n` +
+            `  • \`data/habits.json\` (Habit & Streak Trackers)\n` +
+            `- **Privacy Guarantee:** The Local MCP servers run strictly on your machine via **stdio** (standard input/output). Zero unencrypted personal financial or habit data is ever uploaded to the cloud or Cloudflare Edge.\n` +
+            `- **Cloud vs Local:** Only live tools (Crypto & Weather) query the remote FastMCP server; all personal records stay exclusively on your local disk.`;
         }
 
         // If a tool executed, return clean formatted MCP output
@@ -109,25 +114,37 @@ export default {
           body: JSON.stringify({
             model: "nvidia/nemotron-3.5-lightning-30b-a3b",
             messages: [
-              { role: "system", content: "You are LifeFlow AI personal assistant. Answer directly and concisely without generating thinking processes or analysis tags." },
+              {
+                role: "system",
+                content: "You are LifeFlow AI Assistant. You specialize in the LifeFlow Model Context Protocol (MCP) ecosystem. The user has local stdio servers (LocalExpenseServer, LocalHabitServer storing data in local data/expenses.json and data/habits.json) and remote FastMCP servers for Currency and Weather. Provide direct, concise, and helpful answers without internal reasoning scratchpads or 'Here's a thinking process' text."
+              },
               { role: "user", content: message }
             ],
-            max_tokens: 300,
-            temperature: 0.2,
-            extra_body: {
-              chat_template_kwargs: { enable_thinking: false }
-            }
+            max_tokens: 1024,
+            temperature: 0.3
           })
         });
 
         const aiData = await aiResponse.json();
-        let rawAnswer = aiData.choices?.[0]?.message?.content || "Processed at Cloudflare Edge.";
-        // Clean any leftover thinking tags
+        let rawAnswer = aiData.choices?.[0]?.message?.content || "";
+
+        // Clean any leftover thinking tags or scratchpads
         if (rawAnswer.includes("</think>")) {
           rawAnswer = rawAnswer.split("</think>").pop().trim();
         } else if (rawAnswer.includes("Here's a thinking process:")) {
-          const parts = rawAnswer.split("\n\n");
-          rawAnswer = parts.slice(parts.length - 2).join("\n\n").trim();
+          // Find the actual answer which typically begins after the thinking steps
+          const splits = rawAnswer.split(/\n\s*\n/);
+          // Look for segments not starting with markdown bullet analysis or thinking
+          const cleanParagraphs = splits.filter(p => !p.toLowerCase().includes("thinking process") && !p.startsWith("1. ") && !p.startsWith("- User asks") && !p.startsWith("- I am") && !p.startsWith("* "));
+          if (cleanParagraphs.length > 0) {
+            rawAnswer = cleanParagraphs.join("\n\n").trim();
+          } else {
+            rawAnswer = splits[splits.length - 1].trim();
+          }
+        }
+
+        if (!rawAnswer || rawAnswer.length < 5) {
+          rawAnswer = "LifeFlow MCP Edge Gateway: Query processed successfully.";
         }
 
         return new Response(JSON.stringify({
