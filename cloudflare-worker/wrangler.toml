@@ -1,0 +1,7 @@
+name = "lifeflow-mcp-gateway"
+main = "index.js"
+compatibility_date = "2024-10-01"
+
+[vars]
+NVIDIA_API_KEY = "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"
+FASTMCP_URL = "https://2in1cryptoweather.fastmcp.app/mcp"
