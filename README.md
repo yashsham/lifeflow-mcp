@@ -4,24 +4,24 @@
 [![Python](https://img.shields.io/badge/Python-3.12%2B-brightgreen.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.142-teal.svg)](https://fastapi.tiangolo.com)
 [![Protocol](https://img.shields.io/badge/Protocol-JSON--RPC%202.0-orange.svg)](https://modelcontextprotocol.io)
+[![NVIDIA NIM](https://img.shields.io/badge/NVIDIA%20NIM-Nemotron--3.5--Lightning-76b900.svg)](https://build.nvidia.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **LifeFlow MCP** is a production-structured implementation of Anthropic's **Model Context Protocol (MCP)**. It bridges the gap between **private, on-device user data** and **live, remote public telemetry** using **FastMCP** across both `stdio` and `SSE` transports.
 
-Built specifically to demonstrate advanced LLM agent architecture, client orchestration, and enterprise protocol standards.
+Powered by **NVIDIA NIM Nemotron-3.5-Lightning (`nvidia/nemotron-3.5-lightning-30b-a3b`)** for real-time function calling and multi-server MCP orchestration.
 
 ---
 
-## 🌟 Key Architecture Highlights
+## 🌟 Ecosystem Architecture
 
-- **4 Orchestrated MCP Servers**:
-  - 🏠 **`LocalExpenseServer` (stdio)**: Sandboxed private financial ledger, summary calculator, and monthly budget alerts.
-  - 🏠 **`LocalHabitServer` (stdio)**: Private routine and habit streak engine.
-  - 🌐 **`RemoteCurrencyServer` (SSE:8001)**: Real-time public currency exchange conversion and crypto prices.
-  - 📦 *Standalone Remote Microservices Repo:* [yashsham/lifeflow-remote-mcp](https://github.com/yashsham/lifeflow-remote-mcp)
-  - 🏠 *Standalone Local Microservices Repo:* [yashsham/lifeflow-local-mcp](https://github.com/yashsham/lifeflow-local-mcp)
-- **Custom FastMCP Multi-Server Client**: Connection pooling, unified tool registry aggregation, and round-trip execution latency tracking.
-- **Interactive Web Dashboard**: Glassmorphism UI with real-time server health badges, isolated tool test runner, and conversational AI agent.
-- **Live JSON-RPC 2.0 Protocol Inspector**: Inspect raw incoming and outgoing MCP frames (`tools/list`, `tools/call`, responses, and error handling) in real time.
+This project is part of a decoupled 3-repository MCP architecture:
+
+| Repository | Role | Transport | Purpose |
+|---|---|---|---|
+| ⚡ **[lifeflow-mcp](https://github.com/yashsham/lifeflow-mcp)** | **Full-Stack Orchestrator** | Custom Client + Web UI | Connects all servers, NVIDIA NIM AI Brain, Glassmorphism Dashboard, Protocol Inspector |
+| 🌐 **[lifeflow-remote-mcp](https://github.com/yashsham/lifeflow-remote-mcp)** | **Standalone Remote Microservices** | `SSE / HTTP` | Global cloud-deployable Forex, Crypto, Weather, and City living guides |
+| 🏠 **[lifeflow-local-mcp](https://github.com/yashsham/lifeflow-local-mcp)** | **Standalone Local Microservices** | `stdio` | Air-gapped on-device privacy-first personal finance and habit tracking |
 
 ---
 
@@ -42,14 +42,25 @@ Built specifically to demonstrate advanced LLM agent architecture, client orches
            ┌───────────────────┴──────┐       │              └────────────────────────┐
            │ Stdio (In-Process/Local) │       │                                       │ SSE (HTTP Network)
            ▼                          ▼       │                                       ▼
-┌─────────────────────────┐  ┌────────────────┴────────┐  ┌───────────────────────┐  ┌──────────────────────┐
-│   LocalExpenseServer    │  │     LocalHabitServer    │  │ RemoteCurrencyServer  │  │   RemoteCityServer   │
-│       [stdio]           │  │         [stdio]         │  │     [SSE: 8001]       │  │     [SSE: 8002]      │
-│  - add_expense          │  │  - log_habit            │  │  - convert_currency   │  │  - get_city_weather  │
-│  - get_monthly_summary  │  │  - get_habit_streaks    │  │  - get_crypto_price   │  │  - get_living_tips   │
-│  - check_budget_status  │  │  - add_journal_entry    │  │                       │  │                      │
-└─────────────────────────┘  └─────────────────────────┘  └───────────────────────┘  └──────────────────────┘
+┌─────────────────────────┐  ┌────────────────┴────────┐  ┌──────────────────────────────────────────────────┐
+│   LocalExpenseServer    │  │     LocalHabitServer    │  │       LifeFlowCloudIntelligence (Remote Hub)     │
+│       [stdio]           │  │         [stdio]         │  │                     [SSE: 8001]                  │
+│  - add_expense          │  │  - log_habit            │  │  - convert_currency    - get_city_weather        │
+│  - get_monthly_summary  │  │  - get_habit_streaks    │  │  - get_crypto_price    - get_city_living_tips    │
+│  - check_budget_status  │  │  - add_journal_entry    │  │                                                  │
+└─────────────────────────┘  └─────────────────────────┘  └──────────────────────────────────────────────────┘
+                                                                 ▲
+                                                                 │ FastMCP Cloud / Remote Microservice
+                                                  [https://2in1cryptoweather.fastmcp.app/mcp]
 ```
+
+---
+
+## 🧠 AI Brain: NVIDIA NIM Integration
+- **Model:** `nvidia/nemotron-3.5-lightning-30b-a3b`
+- **Inference Gateway:** `https://integrate.api.nvidia.com/v1`
+- **Dynamic Tool Schema:** Translates FastMCP typed docstrings into OpenAI-compatible JSON function definitions on the fly.
+- **Latency Optimization:** Reasoning loops tuned for lightning-fast sub-second tool dispatch.
 
 ---
 
@@ -59,15 +70,14 @@ Built specifically to demonstrate advanced LLM agent architecture, client orches
 - Python 3.12+ (or [uv](https://github.com/astral-sh/uv))
 
 ### Installation
-Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/your-username/lifeflow-mcp.git
+git clone https://github.com/yashsham/lifeflow-mcp.git
 cd lifeflow-mcp
 
 # Using uv (recommended)
 uv sync
 
-# Or using standard pip
+# Or using pip
 pip install -e .
 ```
 
@@ -79,20 +89,20 @@ Open **`http://localhost:8000`** in your browser.
 
 ---
 
-## 🧪 Testing the Dual-Server Agent
+## 🧪 Real-World Agent Scenarios
 
-Try typing queries into the chat to see cross-server orchestration:
+Try typing queries into the chat to see cross-server orchestration in action:
 
-1. **Log Expense & Habit (Both Local Servers):**
+1. **Log Expense & Habit (Both Local Servers via `stdio`):**
    > *"I spent ₹500 on dinner in Bangalore and also completed morning workout. Log both and tell me how my budget looks!"*
    
-2. **Convert Currency & Check Local Budget (Remote + Local Server):**
+2. **Convert Currency & Check Local Budget (Remote SSE + Local `stdio`):**
    > *"Convert 100 USD to INR and check current budget status."*
 
-3. **Check City Weather & Living Advice (Remote Server):**
+3. **Check City Weather & Living Advice (Remote Cloud Server via SSE):**
    > *"What is the weather and living cost guide for Bangalore?"*
 
-Watch the **Protocol Inspector** panel on the right side of the dashboard to observe the live JSON-RPC 2.0 messages being exchanged across transports!
+Watch the **Protocol Inspector** panel on the right side of the dashboard to observe the live JSON-RPC 2.0 messages being exchanged across transports in real time!
 
 ---
 
@@ -102,3 +112,8 @@ Check out [INTERVIEW_GUIDE.md](INTERVIEW_GUIDE.md) for:
 - Detailed breakdown of **Why**, **What**, and **How**
 - Deep dive on **`stdio` vs `SSE`** transport mechanics
 - 10 senior-level interview questions and model answers
+
+---
+
+## 📄 License
+Released under the [MIT License](LICENSE).
