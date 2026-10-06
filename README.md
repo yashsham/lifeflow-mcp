@@ -3,9 +3,12 @@
 [![FastMCP](https://img.shields.io/badge/FastMCP-v4.0.11-blue.svg)](https://github.com/jlowin/fastmcp)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-brightgreen.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.142-teal.svg)](https://fastapi.tiangolo.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Edge%20Live-F38020.svg)](https://lifeflow-mcp.aspect-ratio---video-resolution-calculator.workers.dev)
 [![Protocol](https://img.shields.io/badge/Protocol-JSON--RPC%202.0-orange.svg)](https://modelcontextprotocol.io)
 [![NVIDIA NIM](https://img.shields.io/badge/NVIDIA%20NIM-Nemotron--3.5--Lightning-76b900.svg)](https://build.nvidia.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**🌐 Live Cloudflare Edge URL:** [https://lifeflow-mcp.aspect-ratio---video-resolution-calculator.workers.dev](https://lifeflow-mcp.aspect-ratio---video-resolution-calculator.workers.dev)
 
 **LifeFlow MCP** is a production-structured implementation of Anthropic's **Model Context Protocol (MCP)**. It bridges the gap between **private, on-device user data** and **live, remote public telemetry** using **FastMCP** across both `stdio` and `SSE` transports.
 
