@@ -1,3 +1,6 @@
+// Edge Client connecting to lifeflow-edge-api worker
+const API_URL = "https://lifeflow-edge-api.aspect-ratio---video-resolution-calculator.workers.dev/api/chat";
+
 // On-Device Local Storage Engine (100% Privacy-First, Air-Gapped per Device: Laptop or Mobile)
 const DeviceDB = {
     getExpenses() {
