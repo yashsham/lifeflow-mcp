@@ -27,12 +27,14 @@ export default {
     // Chat endpoint with Autonomous Tool Orchestration
     if (url.pathname === "/api/chat" && request.method === "POST") {
       try {
-        const { message } = await request.json();
-        const pLower = (message || "").toLowerCase();
+        const body = await request.json();
+        const message = body.message || "";
+        const localContext = body.localContext || null; // Device local database (expenses, habits, rules)
+        const pLower = message.toLowerCase();
         let toolResult = null;
         let toolName = null;
 
-        // 1. Tool Execution: Crypto Prices
+        // 1. Live Remote Tool: Crypto Prices (2in1 Cloud FastMCP)
         if (pLower.includes("bitcoin") || pLower.includes("crypto") || pLower.includes("btc") || pLower.includes("ethereum") || pLower.includes("solana")) {
           toolName = "get_crypto_price";
           try {
@@ -47,7 +49,7 @@ export default {
           }
         }
 
-        // 2. Tool Execution: Currency Conversion
+        // 2. Live Remote Tool: Currency Conversion (2in1 Cloud FastMCP)
         else if (pLower.includes("convert") || pLower.includes("usd to inr") || pLower.includes("currency") || pLower.includes("exchange rate")) {
           toolName = "convert_currency";
           try {
@@ -61,7 +63,7 @@ export default {
           }
         }
 
-        // 3. Tool Execution: Weather & City Living
+        // 3. Live Remote Tool: Weather & City Living (2in1 Cloud FastMCP)
         else if (pLower.includes("weather") || pLower.includes("temperature") || pLower.includes("mausam") || pLower.includes("delhi") || pLower.includes("bangalore") || pLower.includes("living")) {
           toolName = "get_city_weather";
           const city = pLower.includes("bangalore") ? "Bangalore" : pLower.includes("mumbai") ? "Mumbai" : "Delhi";
@@ -81,28 +83,12 @@ export default {
           }
         }
 
-        // 6. Tool Execution: Delete Expense or Update Financial Rules
-        else if (pLower.includes("delete expense") || pLower.includes("remove expense") || pLower.includes("update budget") || pLower.includes("change budget") || pLower.includes("date range") || pLower.includes("filter expense")) {
-          toolName = "local_expense_management";
-          if (pLower.includes("delete") || pLower.includes("remove")) {
-            const numMatch = message.match(/(\d+)/);
-            const id = numMatch ? numMatch[1] : "1";
-            toolResult = `🗑️ **Expense Deleted (Local stdio)**:\n- Successfully removed transaction \`[ID: ${id}]\` from local database \`data/expenses.json\`.\n- Ledger balance and category summaries recalculated automatically.`;
-          } else if (pLower.includes("budget") || pLower.includes("rule")) {
-            const numMatch = message.match(/(\d+(?:,\d+)?)/);
-            const newBudget = numMatch ? numMatch[1].replace(",", "") : "20000";
-            toolResult = `⚙️ **Financial Rules Updated (Local stdio)**:\n- **New Monthly Budget Cap:** ₹${parseInt(newBudget).toLocaleString()} INR\n- **Default Currency:** INR (Active)\n- **Updated Resource:** \`resource://finance/rules\` now reflects the new ₹${parseInt(newBudget).toLocaleString()} threshold in \`data/financial_rules.json\`.`;
-          } else {
-            toolResult = `📅 **Date-Range Expense Records (Local stdio)**:\n- Showing filtered records from \`data/expenses.json\` matching your selected date window.\n- Total Filtered Spending: ₹1,850.00 INR across 3 categories.`;
-          }
-        }
-
-        // If a tool executed, return clean formatted MCP output
+        // If a remote tool executed, return directly
         if (toolResult) {
           return new Response(JSON.stringify({
             answer: toolResult,
             tool_called: toolName,
-            provider: "Cloudflare Edge + FastMCP Tool Executor"
+            provider: "Cloudflare Edge + FastMCP Remote Hub"
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" }
           });
@@ -116,7 +102,16 @@ export default {
         let finalAnswer = "";
         let finalProvider = "";
 
-        const systemPrompt = "You are LifeFlow AI Assistant. You specialize in the LifeFlow Model Context Protocol (MCP) ecosystem. The user has local stdio servers (LocalExpenseServer, LocalHabitServer storing data in local data/expenses.json and data/habits.json) and remote FastMCP servers for Currency and Weather. Provide direct, fast, concise, and helpful answers.";
+        let systemPrompt = "You are LifeFlow AI Assistant, an edge agent for the LifeFlow Model Context Protocol (MCP) ecosystem. You coordinate local device data (LocalExpenseServer, LocalHabitServer) and remote FastMCP servers (Currency, Weather). Provide direct, concise, and helpful answers.";
+        
+        if (localContext) {
+          systemPrompt += "\n\nACTIVE ON-DEVICE LOCAL CONTEXT:\n" +
+            `- Monthly Budget: ₹${localContext.budget || 15000} INR\n` +
+            `- Default Currency: ${localContext.currency || 'INR'}\n` +
+            `- Recent Local Expenses: ${JSON.stringify(localContext.recentExpenses || [])}\n` +
+            `- Habits & Streaks: ${JSON.stringify(localContext.habits || [])}\n` +
+            `Use this actual device data whenever answering questions about expenses, budget, or habit streaks.`;
+        }
 
         try {
           // Attempt 1: Ultra-fast Groq API (openai/gpt-oss-20b) - typically 400ms-700ms response time

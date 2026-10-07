@@ -90,6 +90,47 @@ def add_expense(category: str, amount: float, note: str = "", currency: Optional
 
 
 @mcp.tool()
+def get_all_expenses(limit: int = 50) -> str:
+    """Retrieve and list all recorded expenses from the local database in reverse chronological order."""
+    expenses = _load_expenses()
+    if not expenses:
+        return "No expenses recorded yet in local database."
+
+    rules = _load_rules()
+    currency = rules.get("default_currency", "INR")
+    
+    # Sort by date / id desc
+    sorted_expenses = sorted(expenses, key=lambda x: (x.get("date", ""), x.get("id", 0)), reverse=True)[:limit]
+    total = sum(e.get("amount", 0.0) for e in sorted_expenses)
+    
+    lines = [
+        f"📋 **All Local Expenses** (Showing {len(sorted_expenses)} of {len(expenses)} items, Total: {total:,.2f} {currency})",
+        ""
+    ]
+    for e in sorted_expenses:
+        note_str = f" - *{e.get('note')}*" if e.get("note") else ""
+        lines.append(f"• `[ID {e['id']}]` {e.get('date')} | **{e.get('category')}**: {e.get('amount'):,.2f} {e.get('currency', currency)}{note_str}")
+        
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def get_expense_by_id(expense_id: int) -> str:
+    """Retrieve details of a specific expense by its unique ID."""
+    expenses = _load_expenses()
+    for e in expenses:
+        if e.get("id") == expense_id:
+            return (
+                f"🔍 **Expense Details [ID {e['id']}]**\n"
+                f"- **Date:** {e.get('date')}\n"
+                f"- **Category:** {e.get('category')}\n"
+                f"- **Amount:** {e.get('amount'):,.2f} {e.get('currency', 'INR')}\n"
+                f"- **Note:** {e.get('note') or 'None'}"
+            )
+    return f"❌ Expense with ID {expense_id} not found."
+
+
+@mcp.tool()
 def get_expenses_by_date_range(start_date: Optional[str] = None, end_date: Optional[str] = None, category: Optional[str] = None) -> str:
     """Filter and view expenses by date range (format: YYYY-MM-DD) and optional category."""
     expenses = _load_expenses()
