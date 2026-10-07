@@ -9,7 +9,7 @@ from openai import OpenAI
 
 NVIDIA_API_KEY = os.getenv(
     "NVIDIA_API_KEY",
-    "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"
+    "nvapi-lHQkAqIvlXAbXf3exRu_puVpajkgkgjlkweuhrj6_OwnjHuEhJq-Ih7YpYQltkLJxsW_5_9dv5OJV1eL"
 )
 
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
